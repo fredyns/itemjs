@@ -151,7 +151,8 @@ export const Dashboard: React.FC = () => {
               {itemsData?.items.map((item) => (
                 <Link
                   key={item.id}
-                  to={`/items/${item.slug}`}
+                  to="/items/$slug"
+                  params={{ slug: item.slug }}
                   className="block p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
                 >
                   <div className="flex items-center justify-between">

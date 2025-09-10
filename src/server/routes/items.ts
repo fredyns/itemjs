@@ -75,7 +75,7 @@ itemRoutes.get('/', zValidator('query', querySchema), async (c) => {
   }
 })
 
-// Get single item by ID or slug
+// Get a single item by ID or slug
 itemRoutes.get('/:identifier', async (c) => {
   try {
     const identifier = c.req.param('identifier')
@@ -112,7 +112,7 @@ itemRoutes.get('/:identifier', async (c) => {
   }
 })
 
-// Create new item (protected)
+// Create a new item (protected)
 itemRoutes.post('/', authMiddleware, zValidator('json', createItemSchema), async (c) => {
   try {
     const { title, content, gltfFile, image } = c.req.valid('json')
@@ -157,7 +157,7 @@ itemRoutes.put('/:id', authMiddleware, zValidator('json', updateItemSchema), asy
     const updates = c.req.valid('json')
     const user = c.get('user')
 
-    // Check if item exists and belongs to user
+    // Check if an item exists and belongs to a user
     const existingItem = await prisma.item.findFirst({
       where: { id, userId: user.id }
     })
@@ -206,7 +206,7 @@ itemRoutes.delete('/:id', authMiddleware, async (c) => {
     const id = parseInt(c.req.param('id'))
     const user = c.get('user')
 
-    // Check if item exists and belongs to user
+    // Check if an item exists and belongs to a user
     const existingItem = await prisma.item.findFirst({
       where: { id, userId: user.id },
       include: { subItems: true }
@@ -216,7 +216,7 @@ itemRoutes.delete('/:id', authMiddleware, async (c) => {
       return c.json({ error: 'Item not found or unauthorized' }, 404)
     }
 
-    // Delete item (cascade will handle sub-items)
+    // Delete item (cascade will handle subItems)
     await prisma.item.delete({
       where: { id }
     })

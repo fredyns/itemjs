@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../contexts/AuthContext'
 import { Dashboard } from '../pages/Dashboard'
 import { Login } from '../pages/Login'

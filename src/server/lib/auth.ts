@@ -3,6 +3,13 @@ import bcrypt from 'bcryptjs'
 import { Context } from 'hono'
 import { prisma } from './db'
 
+// Extend Hono's context type to include user
+declare module 'hono' {
+  interface ContextVariableMap {
+    user: { id: number; email: string }
+  }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
 export interface JWTPayload {
