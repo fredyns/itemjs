@@ -1,0 +1,29 @@
+/.phpunit.cache
+/.pnp
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage
+/vendor
+/tmp
+/out-tsc
+
+.pnp.js
+
+*.log*
+*.bak
+*~*
+
+# Build outputs
+dist/
+build/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
