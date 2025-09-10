@@ -26,9 +26,9 @@ export const ShowItem: React.FC = () => {
 
   const deleteItemMutation = useMutation({
     mutationFn: itemsApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] })
-      navigate({ to: '/items' })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['items'] })
+      await navigate({ to: '/items' })
     },
     onError: (error: any) => {
       console.error('Delete item error:', error)
@@ -131,42 +131,29 @@ export const ShowItem: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Content */}
-          <div className="space-y-6">
-            {/* Image */}
-            {item.image && (
-              <div className="card">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-64 object-cover rounded-lg"
-                />
-              </div>
-            )}
-
-            {/* Content */}
-            <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
-              <div 
-                className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: getContentHtml(item.content) }}
-              />
-            </div>
-          </div>
-
-          {/* Right Column - 3D Model */}
+        <div className="space-y-6">
+          {/* 3D Model - Full Width */}
           {item.gltfFile && (
             <div className="card">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">3D Model</h2>
-              <ThreeViewer
-                gltfUrl={item.gltfFile}
-                width={500}
-                height={400}
-                className="w-full"
-              />
+              <div className="w-full" style={{ height: '500px' }}>
+                <ThreeViewer
+                  gltfUrl={item.gltfFile}
+                  height={500}
+                  placeholderImage={item.image}
+                />
+              </div>
             </div>
           )}
+
+          {/* Description - Under 3D Model */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
+            <div 
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: getContentHtml(item.content) }}
+            />
+          </div>
         </div>
 
         {/* Sub-Items Section */}
