@@ -1,0 +1,43 @@
+# Backend Dockerfile (Bun + Hono)
+FROM oven/bun:1
+
+# Install system dependencies including OpenSSL
+RUN apt-get update -y && \
+    apt-get install -y openssl ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY bun.lockb* ./
+
+# Install dependencies
+RUN bun install
+
+# Copy Prisma schema first
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN bun run db:generate
+
+# Copy source code
+COPY . .
+
+# Copy and make initialization script executable
+COPY scripts/init-db.sh /usr/local/bin/init-db.sh
+RUN chmod +x /usr/local/bin/init-db.sh
+
+# Create uploads directory with proper permissions
+RUN mkdir -p uploads && chmod 755 uploads
+
+# Create prisma directory if it doesn't exist
+RUN mkdir -p prisma && chmod 755 prisma
+
+# Expose port
+EXPOSE 3001
+
+# Start development server
+CMD ["bun", "run", "dev:server"]

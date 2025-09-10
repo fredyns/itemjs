@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+}
+
+model Item {
+  id         Int        @id @default(autoincrement())
+  title      String
+  slug       String     @unique
+  gltfFile   String?    @map("gltf_file")
+  content    String?
+  postedAt   DateTime   @default(now()) @map("posted_at")
+  image      String?
+  viewCounts Int        @default(0) @map("view_counts")
+  userId     Int        @map("user_id")
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subItems   SubItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("items")
+}
+
+model SubItem {
+  id       Int      @id @default(autoincrement())
+  itemId   Int      @map("item_id")
+  title    String
+  gltfFile String   @map("gltf_file")
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sub_items")
+}

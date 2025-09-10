@@ -1,0 +1,78 @@
+services:
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://backend:3001
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./index.html:/app/index.html
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    depends_on:
+      - backend
+    networks:
+      - itemjs-network
+
+  # Backend (Bun + Hono)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:./prisma/dev.db
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    volumes:
+      - ./src/server:/app/src/server
+      - ./prisma:/app/prisma
+      - ./uploads:/app/uploads
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    networks:
+      - itemjs-network
+    command: >
+      sh -c "
+        echo 'Waiting for dependencies to be ready...' &&
+        sleep 2 &&
+        echo 'Setting up database...' &&
+        bun run db:generate &&
+        bun run db:push &&
+        echo 'Database setup complete. Starting server...' &&
+        bun run dev:server
+      "
+
+  # Database Management (Prisma Studio) - Optional
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=file:./prisma/dev.db
+    volumes:
+      - ./prisma:/app/prisma
+    networks:
+      - itemjs-network
+    command: bun run db:studio
+    depends_on:
+      - backend
+    profiles:
+      - tools
+
+networks:
+  itemjs-network:
+    driver: bridge
+
+volumes:
+  uploads-data:
+  prisma-data:
