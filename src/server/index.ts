@@ -11,8 +11,18 @@ const app = new Hono()
 
 // Middleware
 app.use('*', logger())
+
+// Dynamic CORS configuration based on environment
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+const allowedOrigins = [frontendUrl]
+
+// Add additional origins for development
+if (process.env.NODE_ENV === 'development') {
+    allowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000')
+}
+
 app.use('*', cors({
-    origin: ['http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
@@ -34,8 +44,9 @@ app.get('/api/health', (c) => {
     return c.json({status: 'ok', timestamp: new Date().toISOString()})
 })
 
-const port = 3001
+const port = parseInt(process.env.BACKEND_PORT || '3001')
 console.log(`Server is running on port ${port}`)
+console.log(`CORS origins: ${allowedOrigins.join(', ')}`)
 
 serve({
     fetch: app.fetch,

@@ -6,7 +6,7 @@ import path from 'path'
 export const uploadRoutes = new Hono()
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(process.cwd(), 'uploads')
+const uploadsDir = path.join(process.cwd(), 'storage', 'uploads')
 const ensureUploadsDir = async () => {
   try {
     await fs.access(uploadsDir)
@@ -70,7 +70,8 @@ uploadRoutes.post('/', authMiddleware, async (c) => {
     const buffer = Buffer.from(arrayBuffer)
     await fs.writeFile(filepath, buffer)
 
-    const fileUrl = `http://localhost:3001/uploads/${filename}`
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
+    const fileUrl = `${backendUrl}/uploads/${filename}`
     
     return c.json({ 
       filename,

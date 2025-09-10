@@ -1,13 +1,33 @@
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-itemjs_db}
+      - POSTGRES_USER=${POSTGRES_USER:-itemjs_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-itemjs_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./storage/postgres/data:/var/lib/postgresql/data
+    networks:
+      - itemjs-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-itemjs_user} -d ${POSTGRES_DB:-itemjs_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Frontend (React + Vite)
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
     environment:
-      - VITE_API_URL=http://backend:3001
+      - VITE_API_URL=${BACKEND_URL:-http://localhost:3101}
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
     volumes:
       - ./src:/app/src
       - ./public:/app/public
@@ -26,23 +46,29 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=file:./prisma/dev.db
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-itemjs_user}:${POSTGRES_PASSWORD:-itemjs_password}@postgres:5432/${POSTGRES_DB:-itemjs_db}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - BACKEND_URL=${BACKEND_URL:-http://localhost:3001}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - BACKEND_PORT=${BACKEND_PORT:-3001}
     volumes:
       - ./src/server:/app/src/server
       - ./prisma:/app/prisma
-      - ./uploads:/app/uploads
+      - ./storage/uploads:/app/storage/uploads
       - ./package.json:/app/package.json
       - ./tsconfig.json:/app/tsconfig.json
     networks:
       - itemjs-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: >
       sh -c "
-        echo 'Waiting for dependencies to be ready...' &&
-        sleep 2 &&
+        echo 'Waiting for PostgreSQL to be ready...' &&
+        sleep 5 &&
         echo 'Setting up database...' &&
         bun run db:generate &&
         bun run db:push &&
@@ -56,16 +82,18 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     ports:
-      - "5555:5555"
+      - "${PRISMA_PORT:-5555}:${PRISMA_PORT:-5555}"
     environment:
-      - DATABASE_URL=file:./prisma/dev.db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-itemjs_user}:${POSTGRES_PASSWORD:-itemjs_password}@postgres:5432/${POSTGRES_DB:-itemjs_db}
+      - PRISMA_PORT=${PRISMA_PORT:-5555}
     volumes:
       - ./prisma:/app/prisma
     networks:
       - itemjs-network
-    command: bun run db:studio
+    command: sh -c "bun run db:studio --port ${PRISMA_PORT:-5555}"
     depends_on:
-      - backend
+      postgres:
+        condition: service_healthy
     profiles:
       - tools
 

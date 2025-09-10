@@ -12,7 +12,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // Allow external connections for Docker
-    port: 3000,
+    port: parseInt(process.env.FRONTEND_PORT || '3000'),
     proxy: {
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:3001',

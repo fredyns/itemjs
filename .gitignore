@@ -9,3 +9,36 @@ yarn-error.log*
 .pnp.js
 
 .vscode/*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+prisma/dev.db
+prisma/dev.db-journal
+
+# Storage directories
+storage/uploads/*
+!storage/uploads/.gitignore
+storage/postgres/*
+!storage/postgres/.gitignore
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+/storage/postgres/

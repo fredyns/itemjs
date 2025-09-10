@@ -26,18 +26,14 @@ RUN bun run db:generate
 # Copy source code
 COPY . .
 
-# Copy and make initialization script executable
-COPY scripts/init-db.sh /usr/local/bin/init-db.sh
-RUN chmod +x /usr/local/bin/init-db.sh
-
-# Create uploads directory with proper permissions
-RUN mkdir -p uploads && chmod 755 uploads
+# Create storage directories with proper permissions
+RUN mkdir -p storage/uploads && chmod 755 storage/uploads
 
 # Create prisma directory if it doesn't exist
 RUN mkdir -p prisma && chmod 755 prisma
 
-# Expose port
+# Expose port (will be overridden by docker-compose port mapping)
 EXPOSE 3001
 
-# Start development server
+# Start development server (port configured via BACKEND_PORT env var in server code)
 CMD ["bun", "run", "dev:server"]
