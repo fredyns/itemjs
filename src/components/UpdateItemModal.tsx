@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { itemsApi, Item } from '../lib/api'
 import { Modal } from './Modal'
 import { RichTextEditor } from './RichTextEditor'
@@ -24,14 +25,31 @@ export const UpdateItemModal: React.FC<UpdateItemModalProps> = ({
   const [error, setError] = useState<string | null>(null)
 
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   const updateItemMutation = useMutation({
     mutationFn: (data: { title?: string; content?: string; gltfFile?: string; image?: string }) =>
       itemsApi.update(item.id, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Invalidate all item-related queries
       queryClient.invalidateQueries({ queryKey: ['item'] })
       queryClient.invalidateQueries({ queryKey: ['items'] })
-      handleClose()
+      
+      // If the slug changed, we need to update the cache for the new slug
+      if (response.item.slug !== item.slug) {
+        // Set the new item data in cache for the new slug
+        queryClient.setQueryData(['item', response.item.slug], { item: response.item })
+        // Remove the old slug from cache
+        queryClient.removeQueries({ queryKey: ['item', item.slug] })
+        
+        // Navigate to the new URL with the updated slug
+        handleClose()
+        navigate({ to: `/items/${response.item.slug}` })
+      } else {
+        // Update the existing cache entry
+        queryClient.setQueryData(['item', item.slug], { item: response.item })
+        handleClose()
+      }
     },
     onError: (error: any) => {
       console.error('Update item error:', error)

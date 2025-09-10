@@ -111,7 +111,7 @@ uploadRoutes.get('/:filename', async (c) => {
       contentType = 'image/png'
     }
 
-    return new Response(file, {
+    return new Response(new Uint8Array(file), {
       headers: {
         'Content-Type': contentType,
         'Content-Length': file.length.toString(),

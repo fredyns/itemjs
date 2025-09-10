@@ -12,7 +12,13 @@ export const ItemsIndex: React.FC = () => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['items', { page, limit, search }],
-    queryFn: () => itemsApi.getAll({ page, limit, search: search || undefined }),
+    queryFn: () => {
+      const params: { page: number; limit: number; search?: string } = { page, limit }
+      if (search && search.trim() !== '') {
+        params.search = search
+      }
+      return itemsApi.getAll(params)
+    },
   })
 
   const handleSearch = (e: React.FormEvent) => {
@@ -35,7 +41,7 @@ export const ItemsIndex: React.FC = () => {
     return `https://via.placeholder.com/80x80/e5e7eb/6b7280?text=${encodeURIComponent(item.title.charAt(0))}`
   }
 
-  const getContentSnippet = (content: string | null) => {
+  const getContentSnippet = (content: string | null | undefined) => {
     if (!content) return 'No content available'
     const textContent = content.replace(/<[^>]*>/g, '') // Strip HTML tags
     return textContent.length > 100 ? textContent.substring(0, 100) + '...' : textContent
@@ -113,7 +119,8 @@ export const ItemsIndex: React.FC = () => {
             {data?.items.map((item) => (
               <Link
                 key={item.id}
-                to={`/items/${item.slug}`}
+                to="/items/$slug"
+                params={{ slug: item.slug }}
                 className="card hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="space-y-3">

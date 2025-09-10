@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { itemsApi, subItemsApi } from '../lib/api'
+import { itemsApi } from '../lib/api'
 import { Layout } from '../components/Layout'
 import { ThreeViewer } from '../components/ThreeViewer'
 import { Modal } from '../components/Modal'
@@ -41,7 +41,7 @@ export const ShowItem: React.FC = () => {
     }
   }
 
-  const getContentHtml = (content: string | null) => {
+  const getContentHtml = (content: string | null | undefined) => {
     if (!content) return 'No content available'
     return content
   }

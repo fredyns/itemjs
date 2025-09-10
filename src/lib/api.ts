@@ -113,8 +113,15 @@ export const authApi = {
 
 // Items API
 export const itemsApi = {
-  getAll: (params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedResponse<Item>> =>
-    makeRequest(`/items?${new URLSearchParams(params as any).toString()}`),
+  getAll: (params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedResponse<Item>> => {
+    // Filter out undefined values to prevent "undefined" strings in URL
+    const filteredParams: Record<string, string> = {}
+    if (params?.page !== undefined) filteredParams.page = params.page.toString()
+    if (params?.limit !== undefined) filteredParams.limit = params.limit.toString()
+    if (params?.search !== undefined && params.search !== '') filteredParams.search = params.search
+    
+    return makeRequest(`/items?${new URLSearchParams(filteredParams).toString()}`)
+  },
 
   getById: (id: number): Promise<{ item: Item }> =>
     makeRequest(`/items/${id}`),
