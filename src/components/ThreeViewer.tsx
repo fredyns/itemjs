@@ -14,7 +14,7 @@ interface ThreeViewerProps {
 export const ThreeViewer: React.FC<ThreeViewerProps> = ({
   gltfUrl,
   width,
-  height = 300,
+  height,
   className = '',
   placeholderImage
 }) => {
@@ -28,18 +28,20 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
   const controlsRef = useRef<OrbitControls>()
   const animationIdRef = useRef<number>()
 
-  // Update container size to fit within parent constraints
+  // Update container size to match parent container dimensions
   const updateContainerSize = () => {
     if (mountRef.current) {
       const parentElement = mountRef.current.parentElement
       if (parentElement) {
         const parentRect = parentElement.getBoundingClientRect()
-        const containerWidth = width || Math.min(parentRect.width, parentRect.height)
-        const containerHeight = height || Math.min(parentRect.width, parentRect.height)
+        // Use parent's actual dimensions to maximize the viewer
+        const containerWidth = width || parentRect.width
+        const containerHeight = height || parentRect.height
         setContainerSize({ width: containerWidth, height: containerHeight })
       } else {
+        // Fallback to mount element dimensions
         const containerWidth = width || mountRef.current.clientWidth
-        const containerHeight = height || containerWidth
+        const containerHeight = height || mountRef.current.clientHeight
         setContainerSize({ width: containerWidth, height: containerHeight })
       }
     }
@@ -189,9 +191,16 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       updateContainerSize()
     })
     
-    if (mountRef.current) {
-      resizeObserver.observe(mountRef.current)
+    // Also listen to window resize events for better responsiveness
+    const handleWindowResize = () => {
+      updateContainerSize()
     }
+    
+    if (mountRef.current?.parentElement) {
+      resizeObserver.observe(mountRef.current.parentElement)
+    }
+    
+    window.addEventListener('resize', handleWindowResize)
 
     // Cleanup function
     return () => {
@@ -204,6 +213,7 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       renderer.dispose()
       controls.dispose()
       resizeObserver.disconnect()
+      window.removeEventListener('resize', handleWindowResize)
     }
   }, [gltfUrl, width, height])
 
@@ -219,7 +229,13 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
   }, [containerSize, width, height])
 
   return (
-    <div className={`relative w-full h-full overflow-hidden ${className}`} style={{ maxHeight: height ? `${height}px` : 'none' }}>
+    <div 
+      className={`relative overflow-hidden ${className}`} 
+      style={{ 
+        height: '100%',
+        width: '100%'
+      }}
+    >
       {/* Zoom Controls */}
       {!isLoading && !hasError && (
         <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
@@ -286,14 +302,7 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       {/* Three.js canvas */}
       <div 
         ref={mountRef} 
-        className={`threejs-canvas w-full h-full ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-        style={{ 
-          width: containerSize.width ? `${containerSize.width}px` : '100%',
-          height: containerSize.height ? `${containerSize.height}px` : '100%',
-          maxWidth: '100%',
-          maxHeight: '100%',
-          overflow: 'hidden'
-        }}
+        className={`threejs-canvas absolute inset-0 w-full h-full ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
       />
     </div>
   )

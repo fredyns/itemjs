@@ -143,12 +143,11 @@ export const ShowItem: React.FC = () => {
                 <CardTitle>3D Model</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="w-full h-[500px] overflow-hidden rounded-lg border">
+                <div className="w-full overflow-hidden rounded-lg border relative" style={{ aspectRatio: '4 / 3', width: '100%' }}>
                   <ThreeViewer
                     gltfUrl={item.gltfFile}
-                    height={500}
                     placeholderImage={item.image}
-                    className="w-full h-full"
+                    className="absolute inset-0 w-full h-full"
                   />
                 </div>
               </CardContent>
