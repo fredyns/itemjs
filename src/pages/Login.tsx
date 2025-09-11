@@ -1,6 +1,10 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Layout } from '../components/Layout'
+import { Card, CardContent } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 
 export const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
@@ -41,13 +45,13 @@ export const Login: React.FC = () => {
           </div>
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="card">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <Card>
+              <CardContent className="space-y-4 p-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email">
                     Email address
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     id="email"
                     name="email"
                     type="email"
@@ -55,16 +59,15 @@ export const Login: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input mt-1"
                     placeholder="Enter your email"
                   />
                 </div>
                 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <div className="space-y-2">
+                  <Label htmlFor="password">
                     Password
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     id="password"
                     name="password"
                     type="password"
@@ -72,21 +75,20 @@ export const Login: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input mt-1"
                     placeholder="Enter your password"
                     minLength={6}
                   />
                 </div>
 
                 {error && (
-                  <div className="text-red-600 text-sm">{error}</div>
+                  <div className="text-destructive text-sm">{error}</div>
                 )}
 
                 <div>
-                  <button
+                  <Button
                     type="submit"
                     disabled={isLoading}
-                    className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
@@ -96,26 +98,27 @@ export const Login: React.FC = () => {
                     ) : (
                       isLogin ? 'Sign in' : 'Create account'
                     )}
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="text-center">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       setIsLogin(!isLogin)
                       setError(null)
                     }}
-                    className="text-sm text-primary-600 hover:text-primary-500"
+                    variant="link"
+                    className="text-sm"
                   >
                     {isLogin 
                       ? "Don't have an account? Sign up" 
                       : 'Already have an account? Sign in'
                     }
-                  </button>
+                  </Button>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </form>
         </div>
       </div>

@@ -20,12 +20,30 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<THREE.Scene>()
   const rendererRef = useRef<THREE.WebGLRenderer>()
   const cameraRef = useRef<THREE.PerspectiveCamera>()
   const controlsRef = useRef<OrbitControls>()
   const animationIdRef = useRef<number>()
+
+  // Update container size to fit within parent constraints
+  const updateContainerSize = () => {
+    if (mountRef.current) {
+      const parentElement = mountRef.current.parentElement
+      if (parentElement) {
+        const parentRect = parentElement.getBoundingClientRect()
+        const containerWidth = width || Math.min(parentRect.width, parentRect.height)
+        const containerHeight = height || Math.min(parentRect.width, parentRect.height)
+        setContainerSize({ width: containerWidth, height: containerHeight })
+      } else {
+        const containerWidth = width || mountRef.current.clientWidth
+        const containerHeight = height || containerWidth
+        setContainerSize({ width: containerWidth, height: containerHeight })
+      }
+    }
+  }
 
   // Zoom functions
   const handleZoomIn = () => {
@@ -63,9 +81,12 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
   useEffect(() => {
     if (!mountRef.current) return
 
+    // Initialize container size
+    updateContainerSize()
+
     // Get actual container dimensions
-    const containerWidth = width || mountRef.current.clientWidth
-    const containerHeight = height || mountRef.current.clientHeight
+    const containerWidth = containerSize.width || (width || mountRef.current.clientWidth)
+    const containerHeight = containerSize.height || (height || containerWidth)
 
     // Scene setup
     const scene = new THREE.Scene()
@@ -163,6 +184,15 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       }
     )
 
+    // Setup resize observer for responsive behavior
+    const resizeObserver = new ResizeObserver(() => {
+      updateContainerSize()
+    })
+    
+    if (mountRef.current) {
+      resizeObserver.observe(mountRef.current)
+    }
+
     // Cleanup function
     return () => {
       if (animationIdRef.current) {
@@ -173,23 +203,23 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       }
       renderer.dispose()
       controls.dispose()
+      resizeObserver.disconnect()
     }
   }, [gltfUrl, width, height])
 
   // Handle resize
   useEffect(() => {
-    if (rendererRef.current && cameraRef.current && mountRef.current) {
-      const containerWidth = width || mountRef.current.clientWidth
-      const containerHeight = height || mountRef.current.clientHeight
+    if (rendererRef.current && cameraRef.current && containerSize.width > 0) {
+      const { width: containerWidth, height: containerHeight } = containerSize
       
       rendererRef.current.setSize(containerWidth, containerHeight)
       cameraRef.current.aspect = containerWidth / containerHeight
       cameraRef.current.updateProjectionMatrix()
     }
-  }, [width, height])
+  }, [containerSize, width, height])
 
   return (
-    <div className={`relative w-full ${className}`} style={{ height }}>
+    <div className={`relative w-full h-full overflow-hidden ${className}`} style={{ maxHeight: height ? `${height}px` : 'none' }}>
       {/* Zoom Controls */}
       {!isLoading && !hasError && (
         <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
@@ -257,6 +287,13 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       <div 
         ref={mountRef} 
         className={`threejs-canvas w-full h-full ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        style={{ 
+          width: containerSize.width ? `${containerSize.width}px` : '100%',
+          height: containerSize.height ? `${containerSize.height}px` : '100%',
+          maxWidth: '100%',
+          maxHeight: '100%',
+          overflow: 'hidden'
+        }}
       />
     </div>
   )

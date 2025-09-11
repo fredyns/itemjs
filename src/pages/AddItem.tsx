@@ -6,6 +6,10 @@ import { Layout } from '../components/Layout'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { ImageUploadComponent } from '../components/ImageUploadComponent'
 import { GltfUploadComponent } from '../components/GltfUploadComponent'
+import { Card, CardContent, CardHeader } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 
 export const AddItem: React.FC = () => {
   const [title, setTitle] = useState('')
@@ -67,50 +71,53 @@ export const AddItem: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Add New Item</h1>
             <p className="mt-2 text-gray-600">Create a new item with rich content</p>
           </div>
-          <button
+          <Button
             onClick={() => navigate({ to: '/items' })}
-            className="btn btn-secondary"
+            variant="secondary"
           >
             Cancel
-          </button>
+          </Button>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="card">
-            <div className="space-y-6">
+          <Card>
+            <CardContent className="space-y-6 p-6">
               {/* Title */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <Label htmlFor="title">
                   Title *
-                </label>
-                <input
+                </Label>
+                <Input
                   id="title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="input"
                   placeholder="Enter item title"
                   required
                 />
               </div>
 
               {/* Image Upload */}
-              <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
-                <label className="block text-sm font-medium text-blue-800 mb-2">
-                  📷 Image Upload (optional)
-                </label>
-                <ImageUploadComponent
-                  onImageUpload={setImage}
-                  currentImageUrl={image}
-                />
-              </div>
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader className="pb-3">
+                  <Label className="text-blue-800 flex items-center gap-2">
+                    📷 Image Upload (optional)
+                  </Label>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ImageUploadComponent
+                    onImageUpload={setImage}
+                    currentImageUrl={image}
+                  />
+                </CardContent>
+              </Card>
 
               {/* Content */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <Label>
                   Content (optional)
-                </label>
+                </Label>
                 <RichTextEditor
                   content={content}
                   onChange={setContent}
@@ -119,58 +126,67 @@ export const AddItem: React.FC = () => {
               </div>
 
               {/* glTF File Upload */}
-              <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
-                <label className="block text-sm font-medium text-purple-800 mb-2">
-                  🎮 3D Model (glTF) - Optional
-                </label>
-                {gltfFile ? (
-                  <div className="p-4 border border-gray-300 rounded-lg bg-green-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <svg className="w-8 h-8 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                          <p className="font-medium text-green-800">3D Model Uploaded</p>
-                          <p className="text-sm text-green-600">File ready for use</p>
+              <Card className="border-purple-200 bg-purple-50/50">
+                <CardHeader className="pb-3">
+                  <Label className="text-purple-800 flex items-center gap-2">
+                    🎮 3D Model (glTF) - Optional
+                  </Label>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {gltfFile ? (
+                    <Card className="border-green-200 bg-green-50">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <svg className="w-8 h-8 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                              <p className="font-medium text-green-800">3D Model Uploaded</p>
+                              <p className="text-sm text-green-600">File ready for use</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={removeGltfFile}
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </Button>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeGltfFile}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <GltfUploadComponent onGltfUpload={handleGltfUpload} />
-                )}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <GltfUploadComponent onGltfUpload={handleGltfUpload} />
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Error Message */}
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600">{error}</p>
-                </div>
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="p-4">
+                    <p className="text-destructive">{error}</p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Submit Button */}
               <div className="flex items-center justify-end space-x-4">
-                <button
+                <Button
                   type="button"
                   onClick={() => navigate({ to: '/items' })}
-                  className="btn btn-secondary"
+                  variant="secondary"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={createItemMutation.isPending}
-                  className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {createItemMutation.isPending ? (
                     <div className="flex items-center">
@@ -180,10 +196,10 @@ export const AddItem: React.FC = () => {
                   ) : (
                     'Create Item'
                   )}
-                </button>
+                </Button>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </form>
       </div>
     </Layout>
