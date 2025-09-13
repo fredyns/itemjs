@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { itemsApi } from '../lib/api'
@@ -6,6 +6,8 @@ import { Layout } from '../components/Layout'
 import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { ErrorBoundary, ItemsListErrorFallback } from '../components/ErrorBoundary'
+import { ItemsGridSkeleton } from '../components/ui/skeleton'
 
 export const ItemsIndex: React.FC = () => {
   const [page, setPage] = useState(1)
@@ -24,31 +26,41 @@ export const ItemsIndex: React.FC = () => {
     },
   })
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Memoized event handlers for better performance
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     setSearch(searchInput)
     setPage(1)
-  }
+  }, [searchInput])
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearch('')
     setSearchInput('')
     setPage(1)
-  }
+  }, [])
 
-  const getImageThumbnail = (item: any) => {
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(e.target.value)
+  }, [])
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage)
+  }, [])
+
+  // Memoized utility functions
+  const getImageThumbnail = useCallback((item: any) => {
     if (item.image) {
       return item.image
     }
     // Placeholder image
     return `https://via.placeholder.com/80x80/e5e7eb/6b7280?text=${encodeURIComponent(item.title.charAt(0))}`
-  }
+  }, [])
 
-  const getContentSnippet = (content: string | null | undefined) => {
+  const getContentSnippet = useCallback((content: string | null | undefined) => {
     if (!content) return 'No content available'
     const textContent = content.replace(/<[^>]*>/g, '') // Strip HTML tags
     return textContent.length > 100 ? textContent.substring(0, 100) + '...' : textContent
-  }
+  }, [])
 
   return (
     <Layout>
@@ -66,26 +78,36 @@ export const ItemsIndex: React.FC = () => {
         {/* Search */}
         <Card>
           <CardContent className="p-6">
-            <form onSubmit={handleSearch} className="flex gap-4">
+            <form onSubmit={handleSearch} className="flex gap-4" role="search" aria-label="Search items">
               <div className="flex-1">
+                <label htmlFor="search-input" className="sr-only">
+                  Search items
+                </label>
                 <Input
+                  id="search-input"
                   type="text"
                   placeholder="Search items..."
                   value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
+                  onChange={handleSearchInputChange}
+                  aria-describedby={search ? "search-results" : undefined}
                 />
               </div>
-              <Button type="submit">
+              <Button type="submit" aria-label="Submit search">
                 Search
               </Button>
               {search && (
-                <Button type="button" onClick={clearSearch} variant="secondary">
+                <Button 
+                  type="button" 
+                  onClick={clearSearch} 
+                  variant="secondary"
+                  aria-label="Clear search results"
+                >
                   Clear
                 </Button>
               )}
             </form>
             {search && (
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p id="search-results" className="mt-2 text-sm text-muted-foreground" role="status" aria-live="polite">
                 Showing results for "{search}"
               </p>
             )}
@@ -93,17 +115,16 @@ export const ItemsIndex: React.FC = () => {
         </Card>
 
         {/* Items Grid */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : error ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-destructive">Error loading items. Please try again.</p>
-            </CardContent>
-          </Card>
-        ) : (
+        <ErrorBoundary fallback={ItemsListErrorFallback}>
+          {isLoading ? (
+            <ItemsGridSkeleton count={limit} />
+          ) : error ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <p className="text-destructive">Error loading items. Please try again.</p>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {/* Add Item Button - First Tile */}
             <Link
@@ -254,16 +275,18 @@ export const ItemsIndex: React.FC = () => {
                 </div>
 
                 <Button
-                  onClick={() => setPage(page + 1)}
+                  onClick={() => handlePageChange(page + 1)}
                   disabled={page >= data.pagination.pages}
                   variant="secondary"
+                  aria-label="Go to next page"
                 >
                   Next
                 </Button>
               </div>
             </CardContent>
           </Card>
-        )}
+          )}
+        </ErrorBoundary>
       </div>
     </Layout>
   )

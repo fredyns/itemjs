@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { ErrorBoundary, ThreeViewerErrorFallback } from './ErrorBoundary'
+import { ThreeViewerSkeleton } from './ui/skeleton'
 
 interface ThreeViewerProps {
   gltfUrl: string
@@ -21,6 +23,19 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
+
+  // Memoized container dimensions to prevent unnecessary recalculations
+  const containerDimensions = useMemo(() => {
+    const containerWidth = containerSize.width || width || 800
+    const containerHeight = containerSize.height || height || 600
+    return { width: containerWidth, height: containerHeight }
+  }, [containerSize.width, containerSize.height, width, height])
+
+  // Memoized style object to prevent unnecessary re-renders
+  const containerStyle = useMemo(() => ({
+    height: '100%',
+    width: '100%'
+  }), [])
   const mountRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<THREE.Scene>()
   const rendererRef = useRef<THREE.WebGLRenderer>()
@@ -28,8 +43,8 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
   const controlsRef = useRef<OrbitControls>()
   const animationIdRef = useRef<number>()
 
-  // Update container size to match parent container dimensions
-  const updateContainerSize = () => {
+  // Memoized container size update function for better performance
+  const updateContainerSize = useCallback(() => {
     if (mountRef.current) {
       const parentElement = mountRef.current.parentElement
       if (parentElement) {
@@ -45,10 +60,10 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
         setContainerSize({ width: containerWidth, height: containerHeight })
       }
     }
-  }
+  }, [width, height])
 
-  // Zoom functions
-  const handleZoomIn = () => {
+  // Memoized zoom functions for better performance
+  const handleZoomIn = useCallback(() => {
     if (controlsRef.current && cameraRef.current) {
       const controls = controlsRef.current
       const camera = cameraRef.current
@@ -62,9 +77,9 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       
       controls.update()
     }
-  }
+  }, [])
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback(() => {
     if (controlsRef.current && cameraRef.current) {
       const controls = controlsRef.current
       const camera = cameraRef.current
@@ -78,7 +93,7 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
       
       controls.update()
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (!mountRef.current) return
@@ -87,8 +102,8 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
     updateContainerSize()
 
     // Get actual container dimensions
-    const containerWidth = containerSize.width || (width || mountRef.current.clientWidth)
-    const containerHeight = containerSize.height || (height || containerWidth)
+    const containerWidth = containerDimensions.width || mountRef.current.clientWidth
+    const containerHeight = containerDimensions.height || containerWidth
 
     // Scene setup
     const scene = new THREE.Scene()
@@ -219,41 +234,51 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
 
   // Handle resize
   useEffect(() => {
-    if (rendererRef.current && cameraRef.current && containerSize.width > 0) {
-      const { width: containerWidth, height: containerHeight } = containerSize
+    if (rendererRef.current && cameraRef.current && containerDimensions.width > 0) {
+      const { width: containerWidth, height: containerHeight } = containerDimensions
       
       rendererRef.current.setSize(containerWidth, containerHeight)
       cameraRef.current.aspect = containerWidth / containerHeight
       cameraRef.current.updateProjectionMatrix()
     }
-  }, [containerSize, width, height])
+  }, [containerDimensions])
 
   return (
-    <div 
-      className={`relative overflow-hidden ${className}`} 
-      style={{ 
-        height: '100%',
-        width: '100%'
-      }}
-    >
+    <ErrorBoundary fallback={ThreeViewerErrorFallback}>
+      <div 
+        className={`relative overflow-hidden ${className}`} 
+        style={containerStyle}
+        role="img"
+        aria-label={`3D model viewer for ${gltfUrl}`}
+        aria-live="polite"
+        aria-busy={isLoading}
+      >
       {/* Zoom Controls */}
       {!isLoading && !hasError && (
-        <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
+        <div 
+          className="absolute top-4 right-4 z-10 flex flex-col space-y-2"
+          role="toolbar"
+          aria-label="3D viewer controls"
+        >
           <button
             onClick={handleZoomIn}
-            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-lg p-2 shadow-sm transition-colors"
+            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-lg p-2 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             title="Zoom In"
+            aria-label="Zoom in to 3D model"
+            type="button"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
             </svg>
           </button>
           <button
             onClick={handleZoomOut}
-            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-lg p-2 shadow-sm transition-colors"
+            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-lg p-2 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             title="Zoom Out"
+            aria-label="Zoom out from 3D model"
+            type="button"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
             </svg>
           </button>
@@ -277,14 +302,9 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
         </div>
       )}
       
-      {/* Loading spinner without a placeholder image */}
+      {/* Loading skeleton */}
       {isLoading && !placeholderImage && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-          <div className="flex flex-col items-center text-gray-600">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mb-2"></div>
-            <span className="text-sm font-medium">Loading 3D Model...</span>
-          </div>
-        </div>
+        <ThreeViewerSkeleton className="absolute inset-0" />
       )}
       
       {/* Error state */}
@@ -304,6 +324,7 @@ export const ThreeViewer: React.FC<ThreeViewerProps> = ({
         ref={mountRef} 
         className={`threejs-canvas absolute inset-0 w-full h-full ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
       />
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }
