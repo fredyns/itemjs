@@ -38,6 +38,7 @@ By the end of this tutorial series, you will understand:
 
 ### Code Quality & Production
 - **[16-best-practices.md](./16-best-practices.md)** - React best practices, code quality, and maintainability
+- **[17-automated-testing.md](./17-automated-testing.md)** - Comprehensive testing strategies with Jest and React Testing Library
 
 ## 🚀 Your Development Case Study
 
