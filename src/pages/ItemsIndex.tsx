@@ -1,51 +1,40 @@
-import React, { useState, useCallback } from 'react'
+import React, { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { itemsApi } from '../lib/api'
 import { Layout } from '../components/Layout'
 import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
 import { ErrorBoundary, ItemsListErrorFallback } from '../components/ErrorBoundary'
 import { ItemsGridSkeleton } from '../components/ui/skeleton'
+import { ItemsSearch } from '../components/items/ItemsSearch'
+import { ItemsPagination } from '../components/items/ItemsPagination'
+import { useSearch } from '../hooks/useSearch'
+import { usePagination } from '../hooks/usePagination'
+import { useAppStore } from '../stores/useAppStore'
 
 export const ItemsIndex: React.FC = () => {
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-  const limit = 12
+  const { itemsPerPage } = useAppStore()
+  const { searchQuery, searchInput, setSearchInput, handleSearch, clearSearch } = useSearch()
+  const { currentPage, setPage: goToPage, nextPage: goToNextPage, previousPage: goToPrevPage } = usePagination()
+  const limit = itemsPerPage
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['items', { page, limit, search }],
+    queryKey: ['items', { page: currentPage, limit, search: searchQuery }],
     queryFn: () => {
-      const params: { page: number; limit: number; search?: string } = { page, limit }
-      if (search && search.trim() !== '') {
-        params.search = search
+      const params: { page: number; limit: number; search?: string } = { page: currentPage, limit }
+      if (searchQuery && searchQuery.trim() !== '') {
+        params.search = searchQuery
       }
       return itemsApi.getAll(params)
     },
   })
 
-  // Memoized event handlers for better performance
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    setSearch(searchInput)
-    setPage(1)
-  }, [searchInput])
-
-  const clearSearch = useCallback(() => {
-    setSearch('')
-    setSearchInput('')
-    setPage(1)
-  }, [])
-
-  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchInput(e.target.value)
-  }, [])
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage)
-  }, [])
+  // Handle search clear
+  const handleClearSearch = useCallback(() => {
+    clearSearch()
+    goToPage(1)
+  }, [clearSearch, goToPage])
 
   // Memoized utility functions
   const getImageThumbnail = useCallback((item: any) => {
@@ -76,43 +65,13 @@ export const ItemsIndex: React.FC = () => {
         </div>
 
         {/* Search */}
-        <Card>
-          <CardContent className="p-6">
-            <form onSubmit={handleSearch} className="flex gap-4" role="search" aria-label="Search items">
-              <div className="flex-1">
-                <label htmlFor="search-input" className="sr-only">
-                  Search items
-                </label>
-                <Input
-                  id="search-input"
-                  type="text"
-                  placeholder="Search items..."
-                  value={searchInput}
-                  onChange={handleSearchInputChange}
-                  aria-describedby={search ? "search-results" : undefined}
-                />
-              </div>
-              <Button type="submit" aria-label="Submit search">
-                Search
-              </Button>
-              {search && (
-                <Button 
-                  type="button" 
-                  onClick={clearSearch} 
-                  variant="secondary"
-                  aria-label="Clear search results"
-                >
-                  Clear
-                </Button>
-              )}
-            </form>
-            {search && (
-              <p id="search-results" className="mt-2 text-sm text-muted-foreground" role="status" aria-live="polite">
-                Showing results for "{search}"
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <ItemsSearch
+          searchInput={searchInput}
+          search={searchQuery}
+          onSearchInputChange={setSearchInput}
+          onSearch={handleSearch}
+          onClearSearch={handleClearSearch}
+        />
 
         {/* Items Grid */}
         <ErrorBoundary fallback={ItemsListErrorFallback}>
@@ -214,9 +173,9 @@ export const ItemsIndex: React.FC = () => {
               </svg>
               <p className="mt-2 text-lg font-medium">No items found</p>
               <p className="text-muted-foreground">
-                {search ? 'Try adjusting your search terms' : 'Get started by creating your first item'}
+                {searchQuery ? 'Try adjusting your search terms' : 'Get started by creating your first item'}
               </p>
-              {!search && (
+              {!searchQuery && (
                 <Button asChild className="mt-4">
                   <Link to="/items/new">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,60 +191,16 @@ export const ItemsIndex: React.FC = () => {
 
         {/* Pagination */}
         {data && data.pagination.pages > 1 && (
-          <Card>
-            <CardContent className="flex items-center justify-between p-6">
-              <div className="text-sm text-muted-foreground">
-                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, data.pagination.total)} of {data.pagination.total} results
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => setPage(page - 1)}
-                  disabled={page <= 1}
-                  variant="secondary"
-                >
-                  Previous
-                </Button>
-                
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, data.pagination.pages) }, (_, i) => {
-                    const pageNum = i + 1
-                    return (
-                      <Button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum)}
-                        variant={page === pageNum ? "default" : "ghost"}
-                        size="sm"
-                      >
-                        {pageNum}
-                      </Button>
-                    )
-                  })}
-                  {data.pagination.pages > 5 && (
-                    <>
-                      <span className="text-muted-foreground px-2">...</span>
-                      <Button
-                        onClick={() => setPage(data.pagination.pages)}
-                        variant={page === data.pagination.pages ? "default" : "ghost"}
-                        size="sm"
-                      >
-                        {data.pagination.pages}
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                <Button
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={page >= data.pagination.pages}
-                  variant="secondary"
-                  aria-label="Go to next page"
-                >
-                  Next
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          )}
+          <ItemsPagination
+            currentPage={currentPage}
+            totalPages={data.pagination.pages}
+            totalItems={data.pagination.total}
+            itemsPerPage={limit}
+            onPageChange={goToPage}
+            onPrevPage={goToPrevPage}
+            onNextPage={goToNextPage}
+          />
+        )}
         </ErrorBoundary>
       </div>
     </Layout>
