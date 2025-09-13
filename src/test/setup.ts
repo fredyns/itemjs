@@ -1,12 +1,22 @@
 import '@testing-library/jest-dom'
 
+// Type declarations for global object extensions
+declare global {
+  var importMeta: {
+    meta: {
+      env: {
+        VITE_API_URL: string
+      }
+    }
+  }
+}
+
 // Mock environment variables
-Object.defineProperty(import.meta, 'env', {
-  value: {
-    VITE_API_URL: 'http://localhost:3001'
-  },
-  writable: true
-})
+;(global as any).importMeta = (global as any).importMeta || {}
+;(global as any).importMeta.meta = (global as any).importMeta.meta || {}
+;(global as any).importMeta.meta.env = {
+  VITE_API_URL: 'http://localhost:3001'
+}
 
 // Mock Three.js for testing
 jest.mock('three', () => ({

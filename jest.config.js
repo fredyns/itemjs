@@ -4,8 +4,8 @@ export default {
   roots: ['<rootDir>/src'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}',
-    '<rootDir>/src/**/*.(test|spec).{js,jsx,ts,tsx}'
+    '**/__tests__/**/*.(test|spec).(js|jsx|ts|tsx)',
+    '**/*.(test|spec).(js|jsx|ts|tsx)'
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',

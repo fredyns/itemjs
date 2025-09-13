@@ -33,5 +33,11 @@ COPY . .
 # Expose port (will be overridden by docker-compose port mapping)
 EXPOSE 3000
 
-# Start development server with configurable port
-CMD sh -c "npm run dev:client -- --host 0.0.0.0 --port ${FRONTEND_PORT:-3000}"
+# Add test script for running tests in container
+RUN echo '#!/bin/sh\nif [ "$1" = "test" ]; then\n  npm test\nelif [ "$1" = "test:watch" ]; then\n  npm run test:watch\nelif [ "$1" = "test:coverage" ]; then\n  npm run test:coverage\nelse\n  npm run dev:client -- --host 0.0.0.0 --port ${FRONTEND_PORT:-3000}\nfi' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# Set entrypoint to handle different commands
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD ["dev"]
