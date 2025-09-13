@@ -43,7 +43,11 @@ export default {
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': 'jest-transform-stub'
   },
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react-jsx'
+      }
+    }],
     '^.+\\.(js|jsx)$': 'babel-jest'
   },
   transformIgnorePatterns: [
@@ -60,12 +64,5 @@ export default {
   testTimeout: 10000,
   verbose: true,
   clearMocks: true,
-  restoreMocks: true,
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        jsx: 'react-jsx'
-      }
-    }
-  }
+  restoreMocks: true
 }

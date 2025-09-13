@@ -1,9 +1,22 @@
-const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api`
+const API_BASE_URL = `${process.env.VITE_API_URL || 'http://localhost:3001'}/api`
 
 export interface User {
   id: number
   email: string
   createdAt: string
+}
+
+export interface SubItem {
+  id: number
+  itemId: number
+  title: string
+  gltfFile: string
+  createdAt: string
+  updatedAt: string
+  item?: {
+    id: number
+    title: string
+  }
 }
 
 export interface Item {
@@ -21,16 +34,6 @@ export interface Item {
   _count?: {
     subItems: number
   }
-}
-
-export interface SubItem {
-  id: number
-  itemId: number
-  title: string
-  gltfFile: string
-  createdAt: string
-  updatedAt: string
-  item?: Pick<Item, 'id' | 'title'>
 }
 
 export interface AuthResponse {

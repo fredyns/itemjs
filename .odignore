@@ -30,7 +30,7 @@ dev.db-journal
 .cache/
 tmp/
 
-
+.git/
 /.phpunit.cache
 /.pnp
 /public/build

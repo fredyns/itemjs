@@ -9,6 +9,103 @@ jest.mock('../ErrorBoundary', () => ({
   ThreeViewerErrorFallback: () => <div>ThreeViewer Error</div>
 }))
 
+// Mock Three.js to avoid WebGL context issues in tests
+jest.mock('three', () => ({
+  Scene: jest.fn(() => ({
+    background: null,
+    add: jest.fn(),
+  })),
+  PerspectiveCamera: jest.fn(() => ({
+    position: {
+      set: jest.fn(),
+      copy: jest.fn().mockReturnThis(),
+      add: jest.fn().mockReturnThis(),
+    },
+    aspect: 1,
+    updateProjectionMatrix: jest.fn(),
+    lookAt: jest.fn(),
+  })),
+  WebGLRenderer: jest.fn(() => ({
+    setSize: jest.fn(),
+    shadowMap: { enabled: false, type: null },
+    domElement: document.createElement('canvas'),
+    render: jest.fn(),
+    dispose: jest.fn(),
+  })),
+  AmbientLight: jest.fn(),
+  DirectionalLight: jest.fn(() => ({
+    position: { set: jest.fn() },
+    castShadow: false,
+    shadow: { mapSize: { width: 0, height: 0 } },
+  })),
+  Color: jest.fn(),
+  Vector3: jest.fn(() => ({
+    set: jest.fn().mockReturnThis(),
+    copy: jest.fn().mockReturnThis(),
+    add: jest.fn().mockReturnThis(),
+    sub: jest.fn().mockReturnThis(),
+    subVectors: jest.fn().mockReturnThis(),
+    multiplyScalar: jest.fn().mockReturnThis(),
+  })),
+  Box3: jest.fn(() => ({
+    setFromObject: jest.fn().mockReturnThis(),
+    getCenter: jest.fn(() => ({ multiplyScalar: jest.fn().mockReturnThis() })),
+    getSize: jest.fn(() => ({ x: 1, y: 1, z: 1 })),
+  })),
+  Mesh: jest.fn(),
+  PCFSoftShadowMap: 'PCFSoftShadowMap',
+}))
+
+// Mock Three.js addons
+jest.mock('three/addons/loaders/GLTFLoader.js', () => ({
+  GLTFLoader: jest.fn(() => ({
+    load: jest.fn((url, onLoad, onProgress, onError) => {
+      // Validate URL exists (simulate real loader behavior)
+      if (!url) {
+        if (onError) {
+          onError(new Error('No URL provided'));
+        }
+        return;
+      }
+      
+      // Simulate loading progress
+      if (onProgress) {
+        onProgress({ loaded: 50, total: 100 });
+      }
+      
+      // Simulate successful loading after a short delay
+      setTimeout(() => {
+        onLoad({
+          scene: {
+            scale: { multiplyScalar: jest.fn() },
+            position: { sub: jest.fn() },
+            traverse: jest.fn((callback) => {
+              // Simulate traversing mesh children
+              callback({ castShadow: true, receiveShadow: true });
+            }),
+          },
+        });
+      }, 100);
+    }),
+  })),
+}))
+
+jest.mock('three/addons/controls/OrbitControls.js', () => ({
+  OrbitControls: jest.fn(() => ({
+    enableDamping: true,
+    dampingFactor: 0.05,
+    screenSpacePanning: false,
+    minDistance: 1,
+    maxDistance: 100,
+    target: {
+      copy: jest.fn().mockReturnThis(),
+      add: jest.fn().mockReturnThis(),
+    },
+    update: jest.fn(),
+    dispose: jest.fn(),
+  })),
+}))
+
 describe('ThreeViewer', () => {
   const defaultProps = {
     gltfUrl: 'https://example.com/test-model.gltf',
@@ -62,7 +159,7 @@ describe('ThreeViewer', () => {
   it('shows zoom controls after loading completes', async () => {
     render(<ThreeViewer {...defaultProps} />)
 
-    // Wait for loading to complete (mocked to resolve after 100ms)
+    // Wait for loading to complete (mocked to resolve after 100 ms)
     await waitFor(() => {
       expect(screen.getByRole('toolbar', { name: '3D viewer controls' })).toBeInTheDocument()
     }, { timeout: 200 })
@@ -148,7 +245,7 @@ describe('ThreeViewer', () => {
   it('cleans up resources on unmount', () => {
     const { unmount } = render(<ThreeViewer {...defaultProps} />)
 
-    // Should not throw errors on unmount
+    // Should not throw errors on 'unmount'
     expect(() => unmount()).not.toThrow()
   })
 

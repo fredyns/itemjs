@@ -1,8 +1,10 @@
 import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createMemoryHistory, createRouter } from '@tanstack/react-router'
+import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router'
 import { routeTree } from '../routeTree.gen'
+import { AuthProvider } from '../contexts/AuthContext'
+
 
 // Create a test query client with disabled retries and caching
 const createTestQueryClient = () => new QueryClient({
@@ -50,12 +52,58 @@ const customRender = (
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <AuthProvider>
+        {children}
+      </AuthProvider>
     </QueryClientProvider>
   )
 
   return {
     ...render(ui, { wrapper: Wrapper, ...renderOptions }),
+    queryClient,
+    router,
+  }
+}
+
+// Simple render function without router for component-only testing
+const renderWithoutRouter = (
+  ui: ReactElement,
+  {
+    queryClient = createTestQueryClient(),
+    ...renderOptions
+  }: Omit<CustomRenderOptions, 'initialEntries'> = {}
+) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    </QueryClientProvider>
+  )
+
+  return {
+    ...render(ui, { wrapper: Wrapper, ...renderOptions }),
+    queryClient,
+  }
+}
+
+// Render function for testing entire routes (not individual components)
+const renderRoute = (
+  initialEntries: string[] = ['/'],
+  queryClient: QueryClient = createTestQueryClient()
+) => {
+  const router = createTestRouter(initialEntries, queryClient)
+
+  const App = () => (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </QueryClientProvider>
+  )
+
+  return {
+    ...render(<App />),
     queryClient,
     router,
   }
@@ -150,7 +198,7 @@ declare module '@tanstack/react-router' {
 // Re-export everything from testing library
 export * from '@testing-library/react'
 export * from '@testing-library/user-event'
-export { customRender as render, createTestQueryClient }
+export { customRender as render, renderWithoutRouter, renderRoute, createTestQueryClient }
 
 // Export createTestRouter with updated signature
 export const createTestRouterExport = (initialEntries: string[] = ['/'], queryClient: QueryClient = createTestQueryClient()) => 

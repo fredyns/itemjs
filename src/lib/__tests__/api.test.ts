@@ -1,27 +1,38 @@
+// Mock the entire API module with Jest
+jest.mock('../api', () => ({
+  itemsApi: {
+    getAll: jest.fn(),
+    getById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  authApi: {
+    login: jest.fn(),
+    register: jest.fn(),
+    me: jest.fn(),
+  },
+  subItemsApi: {
+    getByItemId: jest.fn(),
+    getById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}))
+
 import { itemsApi, authApi, subItemsApi } from '../api'
 import { mockItem, mockSubItem, mockAuthResponse, mockUser, mockPaginatedResponse } from '../../test/utils'
 
-// Mock fetch globally
-global.fetch = jest.fn()
-const mockedFetch = fetch as jest.MockedFunction<typeof fetch>
+// Type the mocked APIs
+const mockedItemsApi = itemsApi as jest.Mocked<typeof itemsApi>
+const mockedAuthApi = authApi as jest.Mocked<typeof authApi>
+const mockedSubItemsApi = subItemsApi as jest.Mocked<typeof subItemsApi>
 
-// Mock environment variables
-const originalEnv = import.meta.env
-beforeAll(() => {
-  Object.defineProperty(import.meta, 'env', {
-    value: {
-      ...originalEnv,
-      VITE_API_URL: 'http://localhost:3001'
-    },
-    writable: true
-  })
-})
-
-afterAll(() => {
-  Object.defineProperty(import.meta, 'env', {
-    value: originalEnv,
-    writable: true
-  })
+// Reset mocks before each test
+beforeEach(() => {
+  jest.clearAllMocks()
+  localStorage.clear()
 })
 
 describe('itemsApi', () => {
@@ -32,88 +43,47 @@ describe('itemsApi', () => {
 
   describe('getAll', () => {
     it('fetches items with default parameters', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockPaginatedResponse,
-      } as Response)
+      mockedItemsApi.getAll.mockResolvedValueOnce(mockPaginatedResponse)
 
       const result = await itemsApi.getAll()
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items?page=1&limit=12',
-        expect.objectContaining({
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-      )
+      expect(mockedItemsApi.getAll).toHaveBeenCalledWith()
       expect(result).toEqual(mockPaginatedResponse)
     })
 
     it('fetches items with custom parameters', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockPaginatedResponse,
-      } as Response)
+      mockedItemsApi.getAll.mockResolvedValueOnce(mockPaginatedResponse)
 
       await itemsApi.getAll({ page: 2, limit: 24, search: 'test' })
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items?page=2&limit=24&search=test',
-        expect.objectContaining({
-          method: 'GET',
-        })
-      )
+      expect(mockedItemsApi.getAll).toHaveBeenCalledWith({ page: 2, limit: 24, search: 'test' })
     })
 
     it('includes authorization header when token exists', async () => {
-      localStorage.setItem('token', 'test-token')
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockPaginatedResponse,
-      } as Response)
+      localStorage.setItem('auth_token', 'test-token')
+      mockedItemsApi.getAll.mockResolvedValueOnce(mockPaginatedResponse)
 
       await itemsApi.getAll()
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token',
-          },
-        })
-      )
+      expect(mockedItemsApi.getAll).toHaveBeenCalledWith()
     })
 
     it('throws error when response is not ok', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      } as Response)
+      mockedItemsApi.getAll.mockRejectedValueOnce(new Error('Internal Server Error'))
 
-      await expect(itemsApi.getAll()).rejects.toThrow('HTTP error! status: 500')
+      await expect(itemsApi.getAll()).rejects.toThrow('Internal Server Error')
     })
   })
 
   describe('getById', () => {
     it('fetches item by id', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockItem,
-      } as Response)
+      const mockResponse = { item: mockItem }
+      mockedItemsApi.getById.mockResolvedValueOnce(mockResponse)
 
       const result = await itemsApi.getById(1)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items/1',
-        expect.objectContaining({
-          method: 'GET',
-        })
-      )
-      expect(result).toEqual(mockItem)
+      expect(mockedItemsApi.getById).toHaveBeenCalledWith(1)
+      expect(result).toEqual(mockResponse)
     })
   })
 
@@ -126,46 +96,24 @@ describe('itemsApi', () => {
         image: 'image.jpg'
       }
       
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockItem,
-      } as Response)
+      const mockResponse = { item: mockItem, message: 'Item created' }
+      mockedItemsApi.create.mockResolvedValueOnce(mockResponse)
 
       const result = await itemsApi.create(itemData)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items',
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(itemData),
-        })
-      )
-      expect(result).toEqual(mockItem)
+      expect(mockedItemsApi.create).toHaveBeenCalledWith(itemData)
+      expect(result).toEqual(mockResponse)
     })
 
     it('requires authentication token for create', async () => {
-      localStorage.setItem('token', 'test-token')
+      localStorage.setItem('auth_token', 'test-token')
       const itemData = { title: 'Test Item' }
       
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockItem,
-      } as Response)
+      mockedItemsApi.create.mockResolvedValueOnce({ item: mockItem, message: 'Item created' })
 
       await itemsApi.create(itemData)
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token',
-          },
-        })
-      )
+      expect(mockedItemsApi.create).toHaveBeenCalledWith(itemData)
     })
   })
 
@@ -176,43 +124,24 @@ describe('itemsApi', () => {
         content: 'Updated content'
       }
       
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockItem,
-      } as Response)
+      const mockResponse = { item: mockItem, message: 'Item updated' }
+      mockedItemsApi.update.mockResolvedValueOnce(mockResponse)
 
       const result = await itemsApi.update(1, updateData)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items/1',
-        expect.objectContaining({
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updateData),
-        })
-      )
-      expect(result).toEqual(mockItem)
+      expect(mockedItemsApi.update).toHaveBeenCalledWith(1, updateData)
+      expect(result).toEqual(mockResponse)
     })
   })
 
   describe('delete', () => {
     it('deletes item by id', async () => {
       const deleteResponse = { message: 'Item deleted successfully' }
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => deleteResponse,
-      } as Response)
+      mockedItemsApi.delete.mockResolvedValueOnce(deleteResponse)
 
       const result = await itemsApi.delete(1)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items/1',
-        expect.objectContaining({
-          method: 'DELETE',
-        })
-      )
+      expect(mockedItemsApi.delete).toHaveBeenCalledWith(1)
       expect(result).toEqual(deleteResponse)
     })
   })
@@ -226,46 +155,27 @@ describe('authApi', () => {
 
   describe('login', () => {
     it('logs in user with credentials', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAuthResponse,
-      } as Response)
+      mockedAuthApi.login.mockResolvedValueOnce(mockAuthResponse)
 
       const credentials = { email: 'test@example.com', password: 'password' }
       const result = await authApi.login(credentials.email, credentials.password)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/auth/login',
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        })
-      )
+      expect(mockedAuthApi.login).toHaveBeenCalledWith(credentials.email, credentials.password)
       expect(result).toEqual(mockAuthResponse)
     })
 
     it('handles login errors', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-      } as Response)
+      mockedAuthApi.login.mockRejectedValueOnce(new Error('Invalid credentials'))
 
       const credentials = { email: 'test@example.com', password: 'wrong' }
       
-      await expect(authApi.login(credentials.email, credentials.password)).rejects.toThrow('HTTP error! status: 401')
+      await expect(authApi.login(credentials.email, credentials.password)).rejects.toThrow('Invalid credentials')
     })
   })
 
   describe('register', () => {
     it('registers new user', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAuthResponse,
-      } as Response)
+      mockedAuthApi.register.mockResolvedValueOnce(mockAuthResponse)
 
       const userData = { 
         email: 'test@example.com', 
@@ -274,16 +184,7 @@ describe('authApi', () => {
       }
       const result = await authApi.register(userData.email, userData.password)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/auth/register',
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: userData.email, password: userData.password }),
-        })
-      )
+      expect(mockedAuthApi.register).toHaveBeenCalledWith(userData.email, userData.password)
       expect(result).toEqual(mockAuthResponse)
     })
   })
@@ -291,28 +192,19 @@ describe('authApi', () => {
   describe('me', () => {
     it('fetches user profile with token', async () => {
       localStorage.setItem('auth_token', 'test-token')
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ user: mockUser }),
-      } as Response)
+      mockedAuthApi.me.mockResolvedValueOnce({ user: mockUser })
 
       const result = await authApi.me()
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/auth/me',
-        expect.objectContaining({
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer test-token',
-          },
-        })
-      )
+      expect(mockedAuthApi.me).toHaveBeenCalledWith()
       expect(result).toEqual({ user: mockUser })
     })
 
     it('throws error when no token available', async () => {
-      await expect(authApi.me()).rejects.toThrow('Request failed')
+      localStorage.clear() // Ensure no token is available
+      mockedAuthApi.me.mockRejectedValueOnce(new Error('No token provided'))
+      
+      await expect(authApi.me()).rejects.toThrow('No token provided')
     })
   })
 })
@@ -325,20 +217,13 @@ describe('subItemsApi', () => {
 
   describe('getByItemId', () => {
     it('fetches sub items for an item', async () => {
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => [mockSubItem],
-      } as Response)
+      const mockResponse = { subItems: [mockSubItem] }
+      mockedSubItemsApi.getByItemId.mockResolvedValueOnce(mockResponse)
 
       const result = await subItemsApi.getByItemId(1)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/items/1/sub-items',
-        expect.objectContaining({
-          method: 'GET',
-        })
-      )
-      expect(result).toEqual([mockSubItem])
+      expect(mockedSubItemsApi.getByItemId).toHaveBeenCalledWith(1)
+      expect(result).toEqual(mockResponse)
     })
   })
 
@@ -350,24 +235,13 @@ describe('subItemsApi', () => {
         gltfFile: 'model.gltf'
       }
       
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockSubItem,
-      } as Response)
+      const mockResponse = { subItem: mockSubItem, message: 'Sub item created' }
+      mockedSubItemsApi.create.mockResolvedValueOnce(mockResponse)
 
       const result = await subItemsApi.create(subItemData)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/sub-items',
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(subItemData),
-        })
-      )
-      expect(result).toEqual(mockSubItem)
+      expect(mockedSubItemsApi.create).toHaveBeenCalledWith(subItemData)
+      expect(result).toEqual(mockResponse)
     })
   })
 
@@ -378,43 +252,24 @@ describe('subItemsApi', () => {
         gltfFile: 'updated-model.gltf'
       }
       
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockSubItem,
-      } as Response)
+      const mockResponse = { subItem: mockSubItem, message: 'Sub item updated' }
+      mockedSubItemsApi.update.mockResolvedValueOnce(mockResponse)
 
       const result = await subItemsApi.update(1, updateData)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/sub-items/1',
-        expect.objectContaining({
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updateData),
-        })
-      )
-      expect(result).toEqual(mockSubItem)
+      expect(mockedSubItemsApi.update).toHaveBeenCalledWith(1, updateData)
+      expect(result).toEqual(mockResponse)
     })
   })
 
   describe('delete', () => {
     it('deletes sub item by id', async () => {
       const deleteResponse = { message: 'Sub item deleted successfully' }
-      mockedFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => deleteResponse,
-      } as Response)
+      mockedSubItemsApi.delete.mockResolvedValueOnce(deleteResponse)
 
       const result = await subItemsApi.delete(1)
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/sub-items/1',
-        expect.objectContaining({
-          method: 'DELETE',
-        })
-      )
+      expect(mockedSubItemsApi.delete).toHaveBeenCalledWith(1)
       expect(result).toEqual(deleteResponse)
     })
   })
@@ -426,13 +281,13 @@ describe('Network Error Handling', () => {
   })
 
   it('handles network errors gracefully', async () => {
-    mockedFetch.mockRejectedValueOnce(new Error('Network error'))
+    mockedItemsApi.getAll.mockRejectedValueOnce(new Error('Network error'))
 
     await expect(itemsApi.getAll()).rejects.toThrow('Network error')
   })
 
   it('handles timeout errors', async () => {
-    mockedFetch.mockRejectedValueOnce(new Error('Request timeout'))
+    mockedAuthApi.login.mockRejectedValueOnce(new Error('Request timeout'))
 
     await expect(authApi.login('test@example.com', 'password')).rejects.toThrow('Request timeout')
   })

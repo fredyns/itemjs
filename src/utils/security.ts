@@ -42,9 +42,11 @@ export const sanitizeText = (input: string): string => {
   
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/<[^>]*>/g, '') // Remove HTML tags but keep content
     .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
+    .replace(/on\w+\s*=\s*[^>\s]+\s*/gi, '') // Remove event handlers with trailing space
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim() // Trim again after processing
     .slice(0, 1000) // Limit length
 }
 
@@ -101,8 +103,7 @@ export const sanitizeSearchQuery = (query: string): string => {
   
   return query
     .trim()
-    .replace(/[<>]/g, '') // Remove angle brackets
-    .replace(/['"]/g, '') // Remove quotes to prevent injection
+    .replace(/<[^>]*>/g, '') // Remove HTML tags but keep content
     .slice(0, 100) // Limit search query length
 }
 

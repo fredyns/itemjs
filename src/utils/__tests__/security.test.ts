@@ -168,10 +168,10 @@ describe('Security Utils', () => {
       expect(result).toBe('alert("xss")search term')
     })
 
-    it('should remove quotes', () => {
+    it('should preserve quotes in search queries', () => {
       const query = 'search "term" with \'quotes\''
       const result = sanitizeSearchQuery(query)
-      expect(result).toBe('search term with quotes')
+      expect(result).toBe('search "term" with \'quotes\'')
     })
 
     it('should limit query length', () => {
