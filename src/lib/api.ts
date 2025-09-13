@@ -84,14 +84,17 @@ const makeRequest = async <T>(
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      // Directly throw without catching locally - let the caller handle it
       throw new ApiError(response.status, errorData.error || 'Request failed')
     }
 
     return await response.json()
   } catch (error) {
+    // Only catch network/parsing errors, not our intentional ApiErrors
     if (error instanceof ApiError) {
-      throw error
+      throw error // Re-throw ApiErrors as-is
     }
+    // Handle unexpected errors (network issues, JSON parsing failures, etc.)
     throw new ApiError(0, 'Network error', error as Error)
   }
 }
@@ -217,14 +220,17 @@ export const uploadApi = {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        // Directly throw without catching locally - let caller handle it
         throw new ApiError(response.status, errorData.error || 'Upload failed')
       }
 
       return await response.json()
     } catch (error) {
+      // Only catch network/parsing errors, not our intentional ApiErrors
       if (error instanceof ApiError) {
-        throw error
+        throw error // Re-throw ApiErrors as-is
       }
+      // Handle unexpected errors (network issues, JSON parsing failures, etc.)
       throw new ApiError(0, 'Network error', error as Error)
     }
   },

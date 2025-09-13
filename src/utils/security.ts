@@ -38,7 +38,7 @@ export const sanitizeHtml = (
  * Sanitize plain text input by removing/escaping dangerous characters
  */
 export const sanitizeText = (input: string): string => {
-  if (!input || typeof input !== 'string') return ''
+  if (!input) return ''
   
   return input
     .trim()
@@ -54,7 +54,7 @@ export const sanitizeText = (input: string): string => {
  * Validate and sanitize email addresses
  */
 export const sanitizeEmail = (email: string): string => {
-  if (!email || typeof email !== 'string') return ''
+  if (!email) return ''
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const sanitized = email.trim().toLowerCase()
@@ -66,7 +66,7 @@ export const sanitizeEmail = (email: string): string => {
  * Sanitize URL to prevent malicious redirects
  */
 export const sanitizeUrl = (url: string): string => {
-  if (!url || typeof url !== 'string') return ''
+  if (!url) return ''
   
   try {
     const parsed = new URL(url)
@@ -86,12 +86,12 @@ export const sanitizeUrl = (url: string): string => {
  * Sanitize file names to prevent path traversal
  */
 export const sanitizeFileName = (fileName: string): string => {
-  if (!fileName || typeof fileName !== 'string') return ''
+  if (!fileName) return ''
   
   return fileName
     .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscore
     .replace(/^\.+/, '') // Remove leading dots
-    .replace(/\.{2,}/g, '.') // Replace multiple dots with single dot
+    .replace(/\.{2,}/g, '.') // Replace multiple dots with a single dot
     .slice(0, 255) // Limit length
 }
 
@@ -99,7 +99,7 @@ export const sanitizeFileName = (fileName: string): string => {
  * Validate and sanitize search queries
  */
 export const sanitizeSearchQuery = (query: string): string => {
-  if (!query || typeof query !== 'string') return ''
+  if (!query) return ''
   
   return query
     .trim()
